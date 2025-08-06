@@ -1,201 +1,135 @@
-import { browser, expect } from '@wdio/globals'
-import LoginPage from '../pageobjects/login.page.js'
-import SecurePage from '../pageobjects/secure.page.js'
-import productPage from '../pageobjects/product.page.js';
-import cartPage from '../pageobjects/cart.page.js';
+import loginPage from "../pageobjects/login.page.js";
+import productPage from "../pageobjects/product.page.js";
+import cartPage from "../pageobjects/cart.page.js";
+import { testSocialRedirect } from "../helpers/redirect.helper.js";
 
-
-
-describe('My Login application', () => {
-
-  //TC-0001
-  it('should login with valid password', async () => {
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce');
-
-
-    const products = await productPage.products; 
-
-    expect(products.length).toBeGreaterThan(5);   
-    await expect(productPage.cartIcon).toBeDisplayed()
-
-  });
-
+describe("Login failure cases", () => {
   //TC-0002
-  it('should show an error when logging in with invalid password', async () => {
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce_wrong');
+  it("should show an error when logging in with invalid password", async () => {
+    await loginPage.open();
+    await loginPage.login("standard_user", "secret_sauce_wrong");
 
-    await expect(LoginPage.errorMessage).toBeDisplayed()
-    await expect(LoginPage.iconX).toBeDisplayed()
-
+    await expect(loginPage.errorMessage).toBeDisplayed();
+    await expect(loginPage.XIcon).toBeDisplayed();
   });
   //TC-0003
-   it('should show an error when logging in with invalid login', async () => {
-    await LoginPage.open();
-    await LoginPage.login('standarD_user', 'secret_sauce');
+  it("should show an error when logging in with invalid login", async () => {
+    await loginPage.open();
+    await loginPage.login("standarD_user", "secret_sauce");
 
-    await expect(LoginPage.errorMessage).toBeDisplayed()
-    await expect(LoginPage.iconX).toBeDisplayed()
+    await expect(loginPage.errorMessage).toBeDisplayed();
+    await expect(loginPage.XIcon).toBeDisplayed();
+  });
+});
 
+describe("Tests that require login", () => {
+  beforeEach(async () => {
+    await loginPage.open();
+    await loginPage.login("standard_user", "secret_sauce");
+  });
+  //TC-0001
+  it("should login with valid password", async () => {
+    const products = await productPage.products;
+
+    expect(products.length).toBeGreaterThan(5);
+    await expect(productPage.cartIcon).toBeDisplayed();
   });
 
   //TC-0004
-  it('should logout', async () => {
-    // precondition 
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce');
+  it("should logout", async () => {
+    await productPage.burgerMenuButton.click();
+    const burgerLinks = await productPage.burgerMenuItems;
+    await expect(productPage.logoutButton).toBeDisplayed();
+    expect(burgerLinks.length).toBe(4);
 
-    await productPage.burgerMenu.click()
-    const burgerLinks = await productPage.itemsBurgerMenu
-    await expect(productPage.logoutButton).toBeDisplayed()
-    expect(burgerLinks.length).toBe(4)
+    await productPage.logoutButton.click();
 
-    await productPage.logoutButton.click()
-
-    await expect(LoginPage.inputUsername).toBeDisplayed();
-    await expect(LoginPage.inputUsername).toHaveValue('');
-    await expect(LoginPage.inputUsername).toHaveValue('');
-
+    await expect(loginPage.usernameInput).toBeDisplayed();
+    await expect(loginPage.usernameInput).toHaveValue("");
+    await expect(loginPage.usernameInput).toHaveValue("");
   });
 
   //TC-0005
-  it('should save cart after logout', async () => {
-    // precondition 
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce');
+  it("should save cart after logout", async () => {
+    await productPage.addToCartById("sauce-labs-backpack").click();
+    await expect(productPage.cartCount).toHaveText("1");
 
-    //add product to the cart
-    await productPage.addToCartById("sauce-labs-backpack").click()
-    await expect(productPage.cartCount).toHaveText('1');
+    productPage.logout();
 
-    //logout
-    productPage.logout()
+    await loginPage.login("standard_user", "secret_sauce");
+    await expect(productPage.cartCount).toHaveText("1");
 
-    //login
-    await LoginPage.login('standard_user', 'secret_sauce');
-    //check cart
-    await expect(productPage.cartCount).toHaveText('1');
-
-    await productPage.removeFromCartButton("sauce-labs-backpack").click()
+    await productPage.removeFromCartButton("sauce-labs-backpack").click();
   });
 
   //TC-0006
-  it('should sort products correctly by all sorting options', async () => {
-      
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce');
-
+  it("should sort products correctly by all sorting options", async () => {
     for (const option of sortOptions) {
-      await productPage.sortSelect.selectByAttribute('value', option.value);
-
-
-      let items;
-      if (option.type === 'price') {
-        items = await productPage.getProductPrices();
-      } else {
-        items = await productPage.getProductNames();
-      }
-
-      const sorted = [...items].sort((a, b) => {
-        if (option.type === 'price') {
-          return option.order === 'asc' ? a - b : b - a;
-        } else {
-          return option.order === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
-        }
-      });
-
-      expect(items).toEqual(sorted);
+      const items = await productPage.getSortedItems(option);
+      const expected = productPage.sortLocally(
+        items,
+        option.type,
+        option.order
+      );
+      expect(items).toEqual(expected);
     }
   });
   //TC-0007
-  it('should redirect to twitter', async () => {
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce');
-    
-    await testSocialRedirect(productPage.twitterLinkButton, 'https://x.com/saucelabs');
-    await testSocialRedirect(productPage.facebookLinkButton, 'https://www.facebook.com/saucelabs');
-    await testSocialRedirect(productPage.linkedinLinkButton, 'https://www.linkedin.com/company/sauce-labs/');
-
-
+  it("should redirect to twitter", async () => {
+    await testSocialRedirect(
+      productPage.twitterLinkButton,
+      "https://x.com/saucelabs"
+    );
+    await testSocialRedirect(
+      productPage.facebookLinkButton,
+      "https://www.facebook.com/saucelabs"
+    );
+    await testSocialRedirect(
+      productPage.linkedinLinkButton,
+      "https://www.linkedin.com/company/sauce-labs/"
+    );
   });
 
   //TC-0008
-  it('should successfully checkout', async () => {
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce');
-    
-    //add to cart
-    await productPage.addToCartById("sauce-labs-backpack").click()
-    await productPage.cartIcon.click()
-    await expect(cartPage.productCartTitle).toHaveText("Sauce Labs Backpack")
-    await cartPage.checkoutButton.click()
+  it("should successfully checkout", async () => {
+    await productPage.addToCartById("sauce-labs-backpack").click();
+    await productPage.cartIcon.click();
+    await expect(cartPage.productCartTitle).toHaveText("Sauce Labs Backpack");
+    await cartPage.checkoutButton.click();
 
-    //checkout info
-    await expect(cartPage.inputFirstName).toBeDisplayed()
-    await cartPage.checkout("vv","vv","vv")
+    await expect(cartPage.firstNameInput).toBeDisplayed();
+    await cartPage.checkout("vv", "vv", "vv");
 
-    //overview checkout
-    await expect(cartPage.checkoutTitle).toHaveText("Checkout: Overview")
-    await expect(cartPage.productCartTitle).toHaveText("Sauce Labs Backpack")
-    await expect(cartPage.cartPageTotalPrice).toHaveText("Item total: $29.99")
+    await expect(cartPage.checkoutTitle).toHaveText("Checkout: Overview");
+    await expect(cartPage.productCartTitle).toHaveText("Sauce Labs Backpack");
+    await expect(cartPage.cartPageTotalPrice).toHaveText("Item total: $29.99");
 
-    //Completed checkout
-    await cartPage.finishButton.click()
-    await expect(cartPage.checkoutTitle).toHaveText("Checkout: Complete!")
-    await expect(cartPage.completeMessage).toHaveText("Your order has been dispatched, and will arrive just as fast as the pony can get there!")
+    await cartPage.finishButton.click();
+    await expect(cartPage.checkoutTitle).toHaveText("Checkout: Complete!");
+    await expect(cartPage.completeMessage).toHaveText(
+      "Your order has been dispatched, and will arrive just as fast as the pony can get there!"
+    );
 
-    //Back home
-    await cartPage.backHomeButton.click()
+    await cartPage.backHomeButton.click();
 
-    const products = await productPage.products; 
+    const products = await productPage.products;
 
-    expect(products.length).toBeGreaterThan(5);   
-    await expect(productPage.cartIcon).toBeDisplayed()
-    await expect(productPage.cartCount).not.toBeDisplayed()
-});
-  //TC-0009
-  it('should show error about empty cart', async () => {
-    await LoginPage.open();
-    await LoginPage.login('standard_user', 'secret_sauce');
-    
-    await expect(productPage.cartIcon).toBeDisplayed()
-    await expect(cartPage.cartItem).not.toBeDisplayed()
-
-    //this test failed! No error message
-    //Explanation: The page doesn't have an error element, so I assumed there should be one with the ID "error-message"
-    // so i get error "Can't call getText on element with selector "#error-message" because element wasn't found"
-    await expect(cartPage.errorMessage).toHaveText("Cart is empty")
-
-
-
-
-});
-});
-
-async function testSocialRedirect(buttonElement, expectedUrlPart) {
-  const originalWindow = await browser.getWindowHandle();
-
-  await buttonElement.click();
-
-  await browser.waitUntil(async () => (await browser.getWindowHandles()).length === 2, {
-    timeout: 5000,
-    timeoutMsg: 'expected a new window to open after 5s'
+    expect(products.length).toBeGreaterThan(5);
+    await expect(productPage.cartIcon).toBeDisplayed();
+    await expect(productPage.cartCount).not.toBeDisplayed();
   });
+  //TC-0009
+  it("should show error about empty cart", async () => {
+    await expect(productPage.cartIcon).toBeDisplayed();
+    await expect(cartPage.cartItem).not.toBeDisplayed();
 
-  const windows = await browser.getWindowHandles();
-  const newWindow = windows.find(w => w !== originalWindow);
-
-  await browser.switchToWindow(newWindow);
-  await expect(browser).toHaveUrl(expectedUrlPart);
-  await browser.closeWindow();
-  await browser.switchToWindow(originalWindow);
-}
+    await expect(cartPage.errorMessage).toHaveText("Cart is empty");
+  });
+});
 
 const sortOptions = [
-    { value: 'lohi', type: 'price', order: 'asc' },
-    { value: 'hilo', type: 'price', order: 'desc' },
-    { value: 'az', type: 'name', order: 'asc' },
-    { value: 'za', type: 'name', order: 'desc' },
-  ];
- 
+  { value: "lohi", type: "price", order: "asc" },
+  { value: "hilo", type: "price", order: "desc" },
+  { value: "az", type: "name", order: "asc" },
+  { value: "za", type: "name", order: "desc" },
+];

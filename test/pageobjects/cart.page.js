@@ -1,74 +1,63 @@
-import { $ } from '@wdio/globals'
-import Page from './page.js';
+import { $ } from "@wdio/globals";
+import Page from "./page.js";
 
-/**
- * sub page containing specific selectors and methods for a specific page
- */
 class CartPage extends Page {
-    /**
-     * define selectors using getter methods
-     */
+  get productCartTitle() {
+    return $(".inventory_item_name");
+  }
 
-    
-    get productCartTitle(){
-        return $(".inventory_item_name")
-    }
+  get cartItem() {
+    return $(".cart-item");
+  }
 
+  get errorMessage() {
+    return $("#error-message");
+  }
 
-    
-    get cartItem(){
-        return $(".cart-item")
-    }
+  get checkoutButton() {
+    return $("#checkout");
+  }
 
-    get errorMessage(){
-        return $("#error-message")
-    }
+  get firstNameInput() {
+    return $("#first-name");
+  }
 
-    get checkoutButton(){
-        return $("#checkout")
-    }
+  get lastNameInput() {
+    return $("#last-name");
+  }
+  get postalCodeInput() {
+    return $("#postal-code");
+  }
+  get continueButton() {
+    return $("#continue");
+  }
 
-  
-    get inputFirstName(){
-        return $("#first-name")
-    }
+  get checkoutTitle() {
+    return $(".title");
+  }
 
-    get inputLastName(){
-        return $("#last-name")
-    }
-     get inputPostalCode(){
-        return $("#postal-code")
-    }
-    get continueButton(){
-        return $("#continue")
-    }
+  get cartPageTotalPrice() {
+    return $(".summary_subtotal_label");
+  }
 
-    get checkoutTitle(){
-        return $(".title")
-    }
+  get finishButton() {
+    return $("#finish");
+  }
 
-    get cartPageTotalPrice(){
-        return $(".summary_subtotal_label")
-    }
+  get completeMessage() {
+    return $(".complete-text");
+  }
 
-    get finishButton (){
-        return $('#finish')
-    }
+  get backHomeButton() {
+    return $("#back-to-products");
+  }
 
-    get completeMessage(){
-        return $('.complete-text')
-    }
-
-    get backHomeButton(){
-        return $('#back-to-products')
-    }
-
-    async checkout (firstName,lastName,code) {
-        await this.inputFirstName.setValue(firstName);
-        await this.inputLastName.setValue(lastName);
-        await this.inputPostalCode.setValue(code);
-        await this.continueButton.click()
-    }
+  async checkout(firstName, lastName, code) {
+    await this.firstNameInput.setValue(firstName);
+    await this.lastNameInput.setValue(lastName);
+    await this.postalCodeInput.setValue(code);
+    await this.continueButton.click();
+  }
 }
 
 export default new CartPage();

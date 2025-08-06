@@ -1,5 +1,5 @@
 {
-  "name": "TestProj",
+  "name": "testRefactor",
   "type": "module",
   "devDependencies": {
     "@wdio/cli": "^9.18.4",

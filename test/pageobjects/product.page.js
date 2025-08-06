@@ -1,14 +1,61 @@
-import { $, $$ } from '@wdio/globals'
-import Page from './page.js';
+import { $, $$ } from "@wdio/globals";
+import Page from "./page.js";
 
-/**
- * sub page containing specific selectors and methods for a specific page
- */
 class ProductPage extends Page {
- get sortSelect() { return $('.product_sort_container'); }
+  get sortSelect() {
+    return $(".product_sort_container");
+  }
 
- async getProductNames() {
-    const nameElements = await $$('.inventory_item_name');
+  get cartIcon() {
+    return $(".shopping_cart_link");
+  }
+
+  get cartCount() {
+    return $(".shopping_cart_badge");
+  }
+
+  get burgerMenuButton() {
+    return $("#react-burger-menu-btn");
+  }
+
+  get burgerMenuItems() {
+    return $$(".bm-item");
+  }
+  get logoutButton() {
+    return $("#logout_sidebar_link");
+  }
+
+  get products() {
+    return $$(".inventory_item");
+  }
+
+  get facebookLinkButton() {
+    return $('[data-test="social-facebook"]');
+  }
+
+  get twitterLinkButton() {
+    return $('[data-test="social-twitter"]');
+  }
+
+  get linkedinLinkButton() {
+    return $('[data-test="social-linkedin"]');
+  }
+
+  async logout() {
+    await this.burgerMenuButton.click();
+    await this.logoutButton.click();
+  }
+
+  addToCartById(productId) {
+    return $(`#add-to-cart-${productId}`);
+  }
+
+  removeFromCartButton(productId) {
+    return $(`#remove-${productId}`);
+  }
+
+  async getProductNames() {
+    const nameElements = await $$(".inventory_item_name");
     const names = [];
     for (const el of nameElements) {
       names.push(await el.getText());
@@ -17,67 +64,31 @@ class ProductPage extends Page {
   }
 
   async getProductPrices() {
-    const priceElements = await $$('.inventory_item_price');
+    const priceElements = await $$(".inventory_item_price");
     const prices = [];
     for (const el of priceElements) {
-      // видаляємо знак $ і конвертуємо в число
       const text = await el.getText();
-      prices.push(parseFloat(text.replace('$', '')));
+      prices.push(parseFloat(text.replace("$", "")));
     }
     return prices;
   }
+  sortLocally(items, type, order = "asc") {
+    return [...items].sort((a, b) => {
+      if (type === "price") {
+        return order === "asc" ? a - b : b - a;
+      } else {
+        return order === "asc" ? a.localeCompare(b) : b.localeCompare(a);
+      }
+    });
+  }
 
-    // get addToCartButton() {
-    //     return $("#add-to-cart-sauce-labs-backpack")
-    // }
-    addToCartById(productId) {
-        return $(`#add-to-cart-${productId}`);
-    }
+  async getSortedItems(option) {
+    await this.sortSelect.selectByAttribute("value", option.value);
 
-    removeFromCartButton(productId) {
-        return $(`#remove-${productId}`)
-    }
-
-    get cartIcon() {
-        return $(".shopping_cart_link")
-    }
-
-    get cartCount() {
-        return $(".shopping_cart_badge")
-    }
-
-    get burgerMenu() {
-        return $("#react-burger-menu-btn")
-    }
-
-     get itemsBurgerMenu() {
-        return $$(".bm-item")
-    }
-    get logoutButton() {
-        return $('#logout_sidebar_link')
-    }
-
-    get products() {
-        return $$(".inventory_item")
-    }
-
-    async logout () {
-        await this.burgerMenu.click();
-        await this.logoutButton.click();
-    }
-
-
-    get facebookLinkButton(){
-        return $('[data-test="social-facebook"]')
-    }
-
-     get twitterLinkButton(){
-        return $('[data-test="social-twitter"]')
-    }
-
-     get linkedinLinkButton(){
-        return $('[data-test="social-linkedin"]')
-    }
+    return option.type === "price"
+      ? await this.getProductPrices()
+      : await this.getProductNames();
+  }
 }
 
 export default new ProductPage();
